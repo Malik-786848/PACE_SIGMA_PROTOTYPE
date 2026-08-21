@@ -1,0 +1,9 @@
+==================================================
+Timestamp: 2026-08-21 10:29:50
+Tokens: 22
+Cost: $0.000264
+==================================================
+
+User: three are running which one is ours
+
+Copilot: Let me check which Python process is ours 

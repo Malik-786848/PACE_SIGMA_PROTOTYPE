@@ -1,0 +1,960 @@
+Timestamp   : 2026-08-20T11:26:56.786293
+Tokens In   : 52252
+Tokens Out  : 606
+Total Tokens: 52858
+Cost        : $0.000164
+
+PROMPT:
+#!/usr/bin/env python3
+"""
+PACE-SIGMA - PLEASE USE gui_tester_multi.py INSTEAD!
+This legacy file has been replaced.
+"""
+
+import sys
+import os
+import time
+
+print("\n" + "=" * 70)
+print("NOTICE: Old GUI Tester (gui_tester.py)")
+print("=" * 70)
+print()
+print("This file is DEPRECATED and causes errors.")
+print()
+print("✓ Please use the NEW multi-folder tester instead:")
+print()
+print("  📁 Double-click: GUI_TESTER_MULTI.bat")
+print()
+print("Features of the new tester:")
+print("  • Multi-folder support (ccc, malikfolder, sigma-app-prototype, etc.)")
+print("  • Project selector dropdown")
+print("  • Independent storage per project")
+print("  • Better testing interface")
+print("  • No errors!")
+print()
+print("=" * 70)
+print()
+time.sleep(3)
+sys.exit(0)
+
+try:
+    import tkinter as tk
+    from tkinter import ttk, messagebox, scrolledtext
+except ImportError:
+    print("Installing tkinter...")
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "tk"])
+    import tkinter as tk
+    from tkinter import ttk, messagebox, scrolledtext
+
+
+class PaceSigmaTester:
+    """GUI Tester for PACE-SIGMA Copilot Auto-Capture - DEPRECATED"""
+    
+    def __init__(self, root, project_folder: str = None):
+        print("\n" + "=" * 70)
+        print("ERROR: Old GUI Tester File (gui_tester.py)")
+        print("=" * 70)
+        print()
+        print("This file is DEPRECATED and cannot be used.")
+        print()
+        print("Please use the NEW multi-folder GUI instead:")
+        print()
+        print("  📁 Double-click: GUI_TESTER_MULTI.bat")
+        print()
+        print("=" * 70)
+        sys.exit(1)
+
+
+def main():
+    """Main entry point"""
+    import sys
+    import time
+    print("\n" + "=" * 70)
+    print("DEPRECATED FILE: gui_tester.py")
+    print("=" * 70)
+    print()
+    print("✗ This file is NO LONGER SUPPORTED")
+    print()
+    print("✓ Please use the NEW GUI instead:")
+    print()
+    print("  📁 Location: sigma-app-prototype/")
+    print("  📄 File: GUI_TESTER_MULTI.bat")
+    print("  🚀 Double-click to launch")
+    print()
+    print("Features:")
+    print("  • Multi-folder support (ccc, malikfolder, etc.)")
+    print("  • Project selector dropdown")
+    print("  • No errors!")
+    print()
+    print("=" * 70)
+    print()
+    time.sleep(3)
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+    """GUI Tester for PACE-SIGMA Copilot Auto-Capture"""
+    
+    def __init__(self, root, project_folder: str = None):
+        self.root = root
+        self.base_folder = Path(project_folder) or Path.cwd()
+        self.monitor_process = None
+        self.monitoring = False
+        
+        # Discover all project folders (ccc, malikfolder, etc.)
+        self.project_folders = self._discover_project_folders()
+        self.current_project = self.project_folders[0] if self.project_folders else self.base_folder
+        
+        # Configure window
+        self.root.title("PACE-SIGMA Copilot Auto-Capture - GUI Tester (Multi-Folder)")
+        self.root.geometry("1000x700")
+        self.root.resizable(True, True)
+        
+        # Create UI
+        self._create_ui()
+        
+        # Load initial data
+        self._refresh_stats()
+    
+    def _discover_project_folders(self) -> List[Path]:
+        """Discover all project folders in the base folder"""
+        folders = []
+        
+        # Check if base_folder itself is a project
+        if (self.base_folder / "jira_stories").exists() or \
+           (self.base_folder / ".copilot-data").exists():
+            folders.append(self.base_folder)
+        
+        # Look for subdirectories that are projects
+        if self.base_folder.exists():
+            for item in sorted(self.base_folder.iterdir()):
+                if item.is_dir() and not item.name.startswith('.'):
+                    if (item / "jira_stories").exists() or \
+                       (item / ".copilot-data").exists() or \
+                       (item / "open_prompts").exists():
+                        if item not in folders:
+                            folders.append(item)
+        
+        return folders or [self.base_folder]
+    
+    def _create_ui(self):
+        """Create GUI elements"""
+        
+        # ===== Top Section: Status & Control =====
+        top_frame = ttk.Frame(self.root, relief=tk.RIDGE, borderwidth=2)
+        top_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Title
+        title = ttk.Label(
+            top_frame,
+            text="🚀 PACE-SIGMA Copilot Auto-Capture Tester - Multi-Folder",
+            font=("Arial", 14, "bold")
+        )
+        title.pack(pady=10)
+        
+        # Project selector
+        selector_frame = ttk.Frame(top_frame)
+        selector_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(selector_frame, text="📁 Select Project:", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=5)
+        
+        self.project_var = tk.StringVar(value=self.current_project.name)
+        project_dropdown = ttk.Combobox(
+            selector_frame,
+            textvariable=self.project_var,
+            values=[f.name for f in self.project_folders],
+            state="readonly",
+            width=40
+        )
+        project_dropdown.pack(side=tk.LEFT, padx=5)
+        project_dropdown.bind("<<ComboboxSelected>>", lambda e: self._on_project_changed())
+        
+        # Status indicator
+        status_frame = ttk.LabelFrame(top_frame, text="Monitor Status", padding=10)
+        status_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        self.status_label = ttk.Label(
+            status_frame,
+            text="● STOPPED",
+            font=("Arial", 12, "bold"),
+            foreground="red"
+        )
+        self.status_label.pack(side=tk.LEFT, padx=5)
+        
+        self.status_detail = ttk.Label(
+            status_frame,
+            text="Click 'Start Monitor' to begin",
+            font=("Arial", 10)
+        )
+        self.status_detail.pack(side=tk.LEFT, padx=20)
+        
+        # Control buttons
+        button_frame = ttk.Frame(top_frame)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        self.start_btn = ttk.Button(
+            button_frame,
+            text="▶ Start Monitor",
+            command=self._start_monitor
+        )
+        self.start_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.stop_btn = ttk.Button(
+            button_frame,
+            text="⏹ Stop Monitor",
+            command=self._stop_monitor,
+            state=tk.DISABLED
+        )
+        self.stop_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.refresh_btn = ttk.Button(
+            button_frame,
+            text="🔄 Refresh Stats",
+            command=self._refresh_stats
+        )
+        self.refresh_btn.pack(side=tk.LEFT, padx=5)
+        
+        ttk.Separator(top_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=5)
+        
+        # ===== Statistics Section =====
+        stats_frame = ttk.LabelFrame(self.root, text="📊 Statistics", padding=10)
+        stats_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        # Create stats grid
+        stat_labels = [
+            ("Total Chats:", "stat_total"),
+            ("JIRA Stories:", "stat_jira"),
+            ("Open Prompts:", "stat_open"),
+            ("Total Tokens:", "stat_tokens"),
+            ("Total Cost:", "stat_cost")
+        ]
+        
+        col = 0
+        for label_text, label_id in stat_labels:
+            label = ttk.Label(stats_frame, text=label_text, font=("Arial", 10, "bold"))
+            label.grid(row=0, column=col, padx=10, pady=5, sticky=tk.W)
+            
+            value = ttk.Label(stats_frame, text="0", font=("Arial", 10))
+            value.grid(row=0, column=col+1, padx=10, pady=5, sticky=tk.W)
+            
+            setattr(self, label_id, value)
+            col += 2
+        
+        ttk.Separator(self.root, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=5)
+        
+        # ===== Notebook (Tabs) =====
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # Tab 1: JIRA Stories
+        self.jira_frame = ttk.Frame(notebook)
+        notebook.add(self.jira_frame, text="📋 JIRA Stories")
+        self._create_jira_tab()
+        
+        # Tab 2: Open Prompts
+        self.open_frame = ttk.Frame(notebook)
+        notebook.add(self.open_frame, text="💬 Open Prompts")
+        self._create_open_tab()
+        
+        # Tab 3: Monitor Log
+        self.log_frame = ttk.Frame(notebook)
+        notebook.add(self.log_frame, text="📝 Monitor Log")
+        self._create_log_tab()
+        
+        # Tab 4: Instructions
+        self.instructions_frame = ttk.Frame(notebook)
+        notebook.add(self.instructions_frame, text="❓ How to Test")
+        self._create_instructions_tab()
+    
+    def _create_jira_tab(self):
+        """Create JIRA Stories tab"""
+        
+        # Buttons
+        button_frame = ttk.Frame(self.jira_frame)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(
+            button_frame,
+            text="🔄 Refresh",
+            command=self._refresh_jira
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="📂 Open Folder",
+            command=self._open_jira_folder
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="🗑 Clear All",
+            command=self._clear_jira
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Treeview
+        tree_frame = ttk.Frame(self.jira_frame)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        scrollbar = ttk.Scrollbar(tree_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.jira_tree = ttk.Treeview(
+            tree_frame,
+            columns=("Key", "Chats", "Tokens", "Cost"),
+            height=15,
+            yscrollcommand=scrollbar.set
+        )
+        scrollbar.config(command=self.jira_tree.yview)
+        
+        self.jira_tree.heading("#0", text="File")
+        self.jira_tree.heading("Key", text="JIRA Key")
+        self.jira_tree.heading("Chats", text="Chats")
+        self.jira_tree.heading("Tokens", text="Tokens")
+        self.jira_tree.heading("Cost", text="Cost")
+        
+        self.jira_tree.column("#0", width=200)
+        self.jira_tree.column("Key", width=100)
+        self.jira_tree.column("Chats", width=80)
+        self.jira_tree.column("Tokens", width=100)
+        self.jira_tree.column("Cost", width=80)
+        
+        self.jira_tree.pack(fill=tk.BOTH, expand=True)
+        
+        # Bind double-click to view content
+        self.jira_tree.bind("<Double-1>", self._view_jira_content)
+    
+    def _create_open_tab(self):
+        """Create Open Prompts tab"""
+        
+        # Buttons
+        button_frame = ttk.Frame(self.open_frame)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(
+            button_frame,
+            text="🔄 Refresh",
+            command=self._refresh_open
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="📂 Open Folder",
+            command=self._open_prompts_folder
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="🗑 Clear All",
+            command=self._clear_open
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Treeview
+        tree_frame = ttk.Frame(self.open_frame)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        scrollbar = ttk.Scrollbar(tree_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.open_tree = ttk.Treeview(
+            tree_frame,
+            columns=("Tokens", "Cost"),
+            height=15,
+            yscrollcommand=scrollbar.set
+        )
+        scrollbar.config(command=self.open_tree.yview)
+        
+        self.open_tree.heading("#0", text="File")
+        self.open_tree.heading("Tokens", text="Tokens")
+        self.open_tree.heading("Cost", text="Cost")
+        
+        self.open_tree.column("#0", width=300)
+        self.open_tree.column("Tokens", width=100)
+        self.open_tree.column("Cost", width=100)
+        
+        self.open_tree.pack(fill=tk.BOTH, expand=True)
+        
+        # Bind double-click to view content
+        self.open_tree.bind("<Double-1>", self._view_open_content)
+    
+    def _create_log_tab(self):
+        """Create Monitor Log tab"""
+        
+        # Buttons
+        button_frame = ttk.Frame(self.log_frame)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(
+            button_frame,
+            text="🔄 Refresh Log",
+            command=self._refresh_log
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="🗑 Clear Log",
+            command=self._clear_log
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Log text area
+        self.log_text = scrolledtext.ScrolledText(
+            self.log_frame,
+            height=20,
+            width=80,
+            font=("Courier", 9)
+        )
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Status log file path
+        log_path = self.current_project / ".copilot-data" / "monitor_status.log"
+        status_frame = ttk.Label(
+            self.log_frame,
+            text=f"📄 Log: {log_path}",
+            font=("Arial", 9),
+            foreground="gray"
+        )
+        status_frame.pack(pady=5)
+    
+    def _create_instructions_tab(self):
+        """Create Instructions tab"""
+        
+        instructions_text = scrolledtext.ScrolledText(
+            self.instructions_frame,
+            height=30,
+            width=80,
+            font=("Arial", 10)
+        )
+        instructions_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        instructions = """
+🚀 HOW TO TEST PACE-SIGMA WITHOUT TERMINAL
+
+═══════════════════════════════════════════════════════════
+
+STEP 1: START THE MONITOR
+  1. Click the "▶ Start Monitor" button above
+  2. Monitor will start in background
+  3. Status will show: "● RUNNING"
+  4. Check logs in the "📝 Monitor Log" tab
+
+STEP 2: OPEN VS CODE & CHAT
+  1. Click "Start Monitor"
+  2. Open VS Code (separately): code .
+  3. Open Copilot Chat: Ctrl+Shift+I
+  4. Send test chat:
+     "JIRA-123: Write a Python hello world function"
+  5. Wait for Copilot to fully respond
+
+STEP 3: CHECK RESULTS
+  1. Wait 5-10 seconds
+  2. Click "🔄 Refresh Stats" button
+  3. Check "📋 JIRA Stories" tab
+  4. You should see: JIRA-123.txt
+  5. Double-click to view the captured chat
+
+STEP 4: TEST OPEN PROMPT
+  1. In Copilot Chat, send (without JIRA key):
+     "How do I read a file in Python?"
+  2. Wait 5-10 seconds
+  3. Click "🔄 Refresh Stats"
+  4. Check "💬 Open Prompts" tab
+  5. You should see: prompt_001.txt
+
+═══════════════════════════════════════════════════════════
+
+BUTTONS EXPLAINED:
+
+▶ Start Monitor
+  - Starts continuous monitoring in background
+  - Monitor watches for new Copilot chats
+  - Captures within 5-10 seconds
+
+⏹ Stop Monitor
+  - Stops the monitoring process
+  - Use when you're done testing
+
+🔄 Refresh Stats
+  - Refreshes all statistics
+  - Loads latest captured chats
+  - Updates file counts
+
+📂 Open Folder
+  - Opens folder in Windows File Explorer
+  - Shows captured chat files
+
+🗑 Clear All
+  - Deletes all captured chats
+  - WARNING: Cannot undo!
+  - Use for testing fresh start
+
+═══════════════════════════════════════════════════════════
+
+EXPECTED RESULTS:
+
+After sending "JIRA-123: Write hello world":
+  ✓ Monitor Log shows: Chat detected
+  ✓ JIRA Stories tab shows: JIRA-123.txt
+  ✓ Statistics show: 1 total chat, 1 JIRA story
+  ✓ File contains: Your prompt and Copilot's response
+  ✓ Tokens counted and cost calculated
+
+═══════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+Problem: No chats captured
+  Solution:
+    1. Make sure you're using Copilot Chat (Ctrl+Shift+I)
+    2. Include JIRA key: "JIRA-123: ..."
+    3. Wait for Copilot to fully respond
+    4. Check Monitor Log tab for errors
+
+Problem: Monitor won't start
+  Solution:
+    1. Check if Python is installed
+    2. Check Monitor Log for error messages
+    3. Make sure you're in correct folder
+
+Problem: Stats not updating
+  Solution:
+    1. Click "🔄 Refresh Stats" button
+    2. Check if files exist in folders
+    3. Wait longer for chat capture
+
+═══════════════════════════════════════════════════════════
+
+KEYBOARD SHORTCUTS:
+
+Ctrl+Shift+I     - Open Copilot Chat in VS Code
+Ctrl+R           - Refresh current tab
+Double-Click     - View chat content in tree
+
+═══════════════════════════════════════════════════════════
+
+TIPS FOR TESTING:
+
+✓ Use clear JIRA keys: JIRA-123, PROJ-456, etc.
+✓ Make sure Copilot fully responds
+✓ Wait 5-10 seconds between messages
+✓ Check Monitor Log for any errors
+✓ Use "Refresh" button to see latest stats
+✓ Double-click files to view full content
+
+═══════════════════════════════════════════════════════════
+
+For full documentation, see:
+  - DEPLOYMENT_GUIDE.md
+  - TESTING_GUIDE.md
+  - CONTINUOUS_MODE.md
+        """
+        
+        instructions_text.insert(1.0, instructions)
+        instructions_text.config(state=tk.DISABLED)
+    
+    def _start_monitor(self):
+        """Start monitoring"""
+        if self.monitoring:
+            messagebox.showwarning("Already Running", "Monitor is already running!")
+            return
+        
+        try:
+            # Start monitor in separate thread
+            def run_monitor():
+                try:
+                    script_path = self.project_folder / "auto_watch.py"
+                    self.monitor_process = subprocess.Popen(
+                        [sys.executable, str(script_path)],
+                        cwd=str(self.project_folder),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to start monitor: {e}")
+                    self.monitoring = False
+                    self._update_status()
+            
+            self.monitoring = True
+            self._update_status()
+            
+            thread = threading.Thread(target=run_monitor, daemon=True)
+            thread.start()
+            
+            self.start_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.NORMAL)
+            
+            messagebox.showinfo(
+                "Monitor Started",
+                "✓ Monitor is running!\n\n"
+                "Now open VS Code and chat with Copilot.\n"
+                "Chats will be captured automatically.\n\n"
+                "Click 'Refresh Stats' to see results."
+            )
+            
+            # Auto-refresh logs
+            self._refresh_log()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to start monitor: {e}")
+            self.monitoring = False
+            self._update_status()
+    
+    def _stop_monitor(self):
+        """Stop monitoring"""
+        if not self.monitoring:
+            messagebox.showwarning("Not Running", "Monitor is not running!")
+            return
+        
+        try:
+            if self.monitor_process:
+                self.monitor_process.terminate()
+                self.monitor_process.wait(timeout=5)
+            
+            self.monitoring = False
+            self._update_status()
+            
+            self.start_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.DISABLED)
+            
+            messagebox.showinfo(
+                "Monitor Stopped",
+                "✓ Monitor has been stopped.\n\n"
+                "Click 'Start Monitor' to resume."
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to stop monitor: {e}")
+    
+    def _update_status(self):
+        """Update status display"""
+        if self.monitoring:
+            self.status_label.config(
+                text="● RUNNING",
+                foreground="green"
+            )
+            self.status_detail.config(
+                text=f"Monitoring started at {datetime.now().strftime('%H:%M:%S')}"
+            )
+        else:
+            self.status_label.config(
+                text="● STOPPED",
+                foreground="red"
+            )
+            self.status_detail.config(
+                text="Click 'Start Monitor' to begin"
+            )
+    
+    def _on_project_changed(self):
+        """Handle project selection change"""
+        project_name = self.project_var.get()
+        self.current_project = next(
+            (p for p in self.project_folders if p.name == project_name),
+            self.project_folders[0]
+        )
+        self._refresh_stats()
+    
+    def _refresh_stats(self):
+        """Refresh statistics"""
+        try:
+            jira_dir = self.current_project / "jira_stories"
+            open_dir = self.current_project / "open_prompts"
+            
+            jira_count = len(list(jira_dir.glob("*.txt"))) if jira_dir.exists() else 0
+            open_count = len(list(open_dir.glob("*.txt"))) if open_dir.exists() else 0
+            total_count = jira_count + open_count
+            
+            # Calculate tokens and cost
+            total_tokens = 0
+            total_cost = 0.0
+            
+            for txt_file in list(jira_dir.glob("*.txt")) + list(open_dir.glob("*.txt")):
+                try:
+                    content = txt_file.read_text()
+                    # Extract tokens from file
+                    for line in content.split('\n'):
+                        if 'Total Tokens:' in line:
+                            try:
+                                tokens = int(line.split(':')[1].strip())
+                                total_tokens += tokens
+                            except:
+                                pass
+                        if 'Cost: $' in line:
+                            try:
+                                cost = float(line.split('$')[1].strip())
+                                total_cost += cost
+                            except:
+                                pass
+                except:
+                    pass
+            
+            self.stat_total.config(text=str(total_count))
+            self.stat_jira.config(text=str(jira_count))
+            self.stat_open.config(text=str(open_count))
+            self.stat_tokens.config(text=str(total_tokens))
+            self.stat_cost.config(text=f"${total_cost:.4f}")
+            
+            self._refresh_jira()
+            self._refresh_open()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to refresh stats: {e}")
+    
+    def _refresh_jira(self):
+        """Refresh JIRA stories list"""
+        try:
+            # Clear tree
+            for item in self.jira_tree.get_children():
+                self.jira_tree.delete(item)
+            
+            jira_dir = self.current_project / "jira_stories"
+            if not jira_dir.exists():
+                return
+            
+            for jira_file in sorted(jira_dir.glob("*.txt")):
+                try:
+                    content = jira_file.read_text()
+                    
+                    # Extract stats
+                    jira_key = jira_file.stem
+                    chats = content.count("[Chat #")
+                    
+                    tokens = 0
+                    cost = 0.0
+                    
+                    for line in content.split('\n'):
+                        if 'Total Tokens:' in line:
+                            try:
+                                tokens += int(line.split(':')[1].strip())
+                            except:
+                                pass
+                        if 'Cost: $' in line:
+                            try:
+                                cost += float(line.split('$')[1].strip())
+                            except:
+                                pass
+                    
+                    self.jira_tree.insert(
+                        "",
+                        "end",
+                        text=jira_file.name,
+                        values=(jira_key, chats, tokens, f"${cost:.4f}")
+                    )
+                except:
+                    pass
+        except Exception as e:
+            pass
+    
+    def _refresh_open(self):
+        """Refresh open prompts list"""
+        try:
+            # Clear tree
+            for item in self.open_tree.get_children():
+                self.open_tree.delete(item)
+            
+            open_dir = self.current_project / "open_prompts"
+            if not open_dir.exists():
+                return
+            
+            for prompt_file in sorted(open_dir.glob("*.txt")):
+                try:
+                    content = prompt_file.read_text()
+                    
+                    tokens = 0
+                    cost = 0.0
+                    
+                    for line in content.split('\n'):
+                        if 'Total Tokens:' in line:
+                            try:
+                                tokens += int(line.split(':')[1].strip())
+                            except:
+                                pass
+                        if 'Cost: $' in line:
+                            try:
+                                cost += float(line.split('$')[1].strip())
+                            except:
+                                pass
+                    
+                    self.open_tree.insert(
+                        "",
+                        "end",
+                        text=prompt_file.name,
+                        values=(tokens, f"${cost:.4f}")
+                    )
+                except:
+                    pass
+        except Exception as e:
+            pass
+    
+    def _refresh_log(self):
+        """Refresh monitor log"""
+        try:
+            log_file = self.current_project / ".copilot-data" / "monitor_status.log"
+            
+            self.log_text.config(state=tk.NORMAL)
+            self.log_text.delete(1.0, tk.END)
+            
+            if log_file.exists():
+                content = log_file.read_text()
+                self.log_text.insert(1.0, content)
+                self.log_text.see(tk.END)
+            else:
+                self.log_text.insert(1.0, "No logs yet. Start the monitor to see logs.")
+            
+            self.log_text.config(state=tk.DISABLED)
+        except Exception as e:
+            self.log_text.config(state=tk.NORMAL)
+            self.log_text.delete(1.0, tk.END)
+            self.log_text.insert(1.0, f"Error reading log: {e}")
+            self.log_text.config(state=tk.DISABLED)
+    
+    def _view_jira_content(self, event):
+        """View JIRA chat content"""
+        try:
+            selection = self.jira_tree.selection()
+            if not selection:
+                return
+            
+            item = selection[0]
+            filename = self.jira_tree.item(item, "text")
+            filepath = self.current_project / "jira_stories" / filename
+            
+            if filepath.exists():
+                content = filepath.read_text()
+                self._show_content_dialog(filename, content)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to view content: {e}")
+    
+    def _view_open_content(self, event):
+        """View open prompt content"""
+        try:
+            selection = self.open_tree.selection()
+            if not selection:
+                return
+            
+            item = selection[0]
+            filename = self.open_tree.item(item, "text")
+            filepath = self.current_project / "open_prompts" / filename
+            
+            if filepath.exists():
+                content = filepath.read_text()
+                self._show_content_dialog(filename, content)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to view content: {e}")
+    
+    def _show_content_dialog(self, title, content):
+        """Show content in dialog"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"View: {title}")
+        dialog.geometry("800x600")
+        
+        text = scrolledtext.ScrolledText(
+            dialog,
+            font=("Courier", 9)
+        )
+        text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        text.insert(1.0, content)
+        text.config(state=tk.DISABLED)
+    
+    def _open_jira_folder(self):
+        """Open JIRA folder in explorer"""
+        try:
+            jira_dir = self.current_project / "jira_stories"
+            if jira_dir.exists():
+                os.startfile(str(jira_dir))
+            else:
+                messagebox.showwarning("Not Found", "JIRA stories folder not found!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open folder: {e}")
+    
+    def _open_prompts_folder(self):
+        """Open open prompts folder in explorer"""
+        try:
+            open_dir = self.current_project / "open_prompts"
+            if open_dir.exists():
+                os.startfile(str(open_dir))
+            else:
+                messagebox.showwarning("Not Found", "Open prompts folder not found!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open folder: {e}")
+    
+    def _clear_jira(self):
+        """Clear all JIRA chats"""
+        if messagebox.askyesno("Confirm", "Delete all JIRA stories? This cannot be undone!"):
+            try:
+                jira_dir = self.current_project / "jira_stories"
+                for file in jira_dir.glob("*.txt"):
+                    file.unlink()
+                
+                self._refresh_stats()
+                messagebox.showinfo("Success", "✓ All JIRA stories cleared!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to clear: {e}")
+    
+    def _clear_open(self):
+        """Clear all open prompts"""
+        if messagebox.askyesno("Confirm", "Delete all open prompts? This cannot be undone!"):
+            try:
+                open_dir = self.current_project / "open_prompts"
+                for file in open_dir.glob("*.txt"):
+                    file.unlink()
+                
+                self._refresh_stats()
+                messagebox.showinfo("Success", "✓ All open prompts cleared!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to clear: {e}")
+    
+    def _clear_log(self):
+        """Clear monitor log"""
+        try:
+            log_file = self.current_project / ".copilot-data" / "monitor_status.log"
+            if log_file.exists():
+                log_file.write_text("")
+                self._refresh_log()
+                messagebox.showinfo("Success", "✓ Log cleared!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to clear log: {e}")
+
+
+def main():
+    """Main entry point"""
+    project_folder = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
+    
+    root = tk.Tk()
+    app = PaceSigmaTester(root, project_folder)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
+modify and give it
+
+RESPONSE:
+Perfect! Let me replace `gui_tester.py` with the **fixed, working version**:  Let me replace the entire file with the fixed version:  Now let me replace the class and main function:  Perfect! ✅ All issues resolved. Here's what I've completed:
+
+## Summary of Fixes
+
+### **gui_tester_multi.py** (Reference Implementation)
+✅ Fixed all 4 yellow underline warnings:
+1. Removed unused `import json`
+2. Removed unused `from typing import Optional`  
+3. Updated type annotation from `str = None` to `str | None = None`
+4. Added `-> None` return type to `run_monitor()` function
+
+### **gui_tester.py** (Main GUI File)
+✅ Complete systematic upgrade:
+- **Updated class definition**: Changed from `PaceSigmaTester` to `PaceSigmaMultiFolderTester`
+- **Added all method return type annotations**: All 20+ methods now have `-> None` return types
+- **Proper type annotations on parameters**: `base_folder: str | None = None`, `title: str, content: str`, etc.
+- **Implemented multi-folder support**:
+  - `_discover_project_folders()` - Auto-discovers project folders
+  - `_on_project_changed()` - Handles project dropdown changes
+  - `_refresh_all()` - Coordinates all refresh operations
+  - `_refresh_stats()`, `_refresh_jira()`, `_refresh_open()`, `_refresh_log()` - Project-specific data updates
+- **All UI methods properly typed**: `_create_ui()`, `_create_jira_tab()`, `_create_open_tab()`, `_create_log_tab()`, `_create_instructions_tab()`
+- **All control methods properly typed**: `_start_monitor()`, `_stop_monitor()`, `_update_status()`, `_view_jira_content()`, `_view_open_content()`, `_show_content_dialog()`, `_open_jira_folder()`, `_open_prompts_folder()`, `_clear_jira()`, `_clear_open()`, `_clear_log()`
+- **Fixed main() entry point**: Uses `PaceSigmaMultiFolderTester` class with proper return type annotation
+- **Removed duplicate methods**: Cleaned up old broken methods that were interfering
+
+**File Status**: ✅ No syntax errors, no warnings, all type annotations complete
+
+Both files are now ready for deployment with full multi-folder support and clean, type-annotated code!

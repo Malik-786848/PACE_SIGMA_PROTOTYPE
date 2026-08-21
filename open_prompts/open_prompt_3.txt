@@ -1,0 +1,53 @@
+Timestamp   : 2026-08-21T00:28:31.539475
+Tokens In   : 40335
+Tokens Out  : 363
+Total Tokens: 40698
+Cost        : $0.000125
+
+PROMPT:
+i am getting error
+
+RESPONSE:
+I can see the error! There are two issues:
+
+1. **UnicodeEncodeError** - The script is trying to use a check mark character (✓) that Windows console can't display
+2. **DeprecationWarning** - Using old `datetime.utcnow()` method
+
+Let me fix the `global_monitor.py` file:  Found the issues! Let me fix them:  Perfect! ✅ Fixed both issues:
+
+1. **Unicode Error** - Changed check marks (✓) to `[OK]` text
+2. **Deprecation Warning** - Changed `utcnow()` to `now(timezone.utc)`
+
+---
+
+## 🧪 **Test It Now:**
+
+Try this command in terminal:
+
+```powershell
+cd C:\Users\312782\Documents\pace--sigma\sigma-app-prototype
+python global_monitor.py
+```
+
+The monitor should start **without errors**. You'll see clean output like:
+```
+================================================================================
+GLOBAL MONITOR STARTED
+Watch directories: ['C:\Users\312782\Documents', 'C:\Users\312782\Desktop', 'C:\Users\312782\Projects']
+================================================================================
+
+[OK] Project initialized: YourProject
+[OK] Saved JIRA chat: YourProject/JIRA-123
+[OK] Saved prompt: YourProject/open_prompts
+```
+
+---
+
+## ✅ **What Changed:**
+
+| Old | New |
+|-----|-----|
+| `✓ Saved JIRA chat` | `[OK] Saved JIRA chat` |
+| `datetime.utcnow()` | `datetime.now(timezone.utc)` |
+
+No more encoding errors! The monitor is ready to use. 🎉

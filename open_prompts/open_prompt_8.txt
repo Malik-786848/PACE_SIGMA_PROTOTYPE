@@ -1,0 +1,55 @@
+Timestamp   : 2026-08-21T10:25:11.712815
+Tokens In   : 82939
+Tokens Out  : 460
+Total Tokens: 83399
+Cost        : $0.000254
+
+PROMPT:
+it is not storing open prompts it storing jira story chat
+
+RESPONSE:
+I see the issue! The code is only finding JIRA chats because the test chats all had JIRA keys. Let me fix the logic to save **both JIRA and open prompts**:  Now let me create a **test script** to verify both JIRA and open prompts are saved:  Good! Both are working but I notice the timestamps are identical so files overwrite. Let me fix that:  Let me check the exact formatting first:  Now test again to confirm both work with unique filenames:   Perfect! ✅ Now both JIRA and open prompts are saving correctly! Let me show you what was created:  Perfect! Now clean up test files and create a summary guide:    Now let me update your setup guide:    Let me recreate the guide with the corrected information:    Perfect! ✅ **FIXED - Both JIRA and Open Prompts Now Working!**
+
+---
+
+## 📊 **What's Fixed:**
+
+### **Before:**
+❌ Only JIRA chats saved  
+❌ Open prompts not saved
+
+### **Now:**
+✅ **JIRA Chats Saved** → `.copilot-data/jira_stories/JIRA_XXX.txt`  
+✅ **Open Prompts Saved** → `.copilot-data/open_prompts/YYYY-MM-DD_HH-MM-SS.txt`  
+✅ **Unique Filenames** → No overwrites  
+✅ **Token Counts** → Automatically calculated  
+✅ **Cost Tracking** → Included in files
+
+---
+
+## 🚀 **Next Step:**
+
+### **Update Your Task Scheduler:**
+When you created the task earlier, update the **Actions** to use `auto_watch.py`:
+
+**Actions Tab:**
+- Program: `C:\Python313\python.exe`
+- Arguments: `-u "C:\Users\312782\Documents\pace--sigma\sigma-app-prototype\auto_watch.py"`
+
+---
+
+## 📝 **Test It:**
+
+1. Open VS Code
+2. Open Chat panel
+3. Ask: **"How to optimize Python?"** (no JIRA key)
+4. Get Copilot response
+5. Wait 10 seconds
+6. Check: `YourProject/.copilot-data/open_prompts/` → File created! ✅
+
+---
+
+## 📋 **Complete Setup Guide:**
+See: [SETUP_AUTO_WATCH.md](SETUP_AUTO_WATCH.md)
+
+Everything is now fully automatic! 🎉

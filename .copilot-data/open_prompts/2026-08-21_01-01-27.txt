@@ -1,0 +1,53 @@
+==================================================
+Timestamp: 2026-08-21 01:01:27
+Tokens: 382
+Cost: $0.004584
+==================================================
+
+User: sigma 101:can u give code for that one
+
+Copilot: I’m checking the current login helper in the prototype so I can give you the exact `SIGMA-101` code against the file as it exists now.
+For `SIGMA-101`, the code you want is the fix for the first-run GitHub login verification in 
+. Right now that file is still using `Basic` auth, which is the bug.
+
+Use this version of 
+:
+
+```python
+def _verify_github_pat(username: str, pat: str) -> tuple[bool, str]:
+    """Call authenticated /user endpoint and verify the token belongs to username.
+
+    Returns (is_valid, error_message).
+    PAT needs at least read:user scope.
+    """
+    url = "https://api.github.com/user"
+    req = Request(url, headers={
+        "User-Agent": "export-chat-session-script",
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {pat}",
+    })
+    try:
+        with urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            actual_login = data.get("login", "")
+            if actual_login.lower() == username.lower():
+                return True, ""
+            return False, f"Token belongs to '{actual_login}', not '{username}'"
+    except HTTPError as e:
+        if e.code == 401:
+            return False, "Invalid or expired token (401 Unauthorized)"
+        return False, f"GitHub API error: {e.code}"
+    except URLError:
+        return True, "[WARN] Offline — ownership not verified"
+```
+
+The main change is:
+- remove 
+ and the 
+ header
+- use `Authorization: Bearer <PAT>`
+- add 
+
+
+If you want, I can also show the exact before/after diff for 
+.

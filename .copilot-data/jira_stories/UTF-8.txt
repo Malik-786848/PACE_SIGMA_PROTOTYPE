@@ -1,0 +1,427 @@
+
+
+==================================================
+JIRA: UTF-8
+Timestamp: 2026-08-21 01:01:27
+Tokens: 3977
+Cost: $0.047724
+==================================================
+
+User: after pasting that import os
+import sys
+import time
+import json
+import re
+import glob
+from urllib.parse import unquote
+from collections import defaultdict
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from datetime import datetime
+
+# ---------- Setup ----------
+USER_PROFILE = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+WORKSPACE_STORAGE = os.path.join(USER_PROFILE, "AppData", "Roaming", "Code", "User", "workspaceStorage")
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(SCRIPT_DIR, "output.log")
+TOKENS_REPORT_FILE = os.path.join(SCRIPT_DIR, "tokens_and_costs_report.txt")
+
+IGNORE_KEYS = {
+    "UTF-8", "UTF-16", "SHA-256", "SHA-512", "HS-256", "RS-256",
+    "ES-256", "AES-128", "AES-256", "BASE-64", "HTTP-2", "HTML-5",
+    "CSS-3", "ES-6", "VERSION-1", "STEP-1", "PART-1", "MALIK-786848"
+}
+
+
+def estimate_tokens(text):
+    """Estimate token count from text (~1 token per 4 characters)."""
+    if not text:
+        return 0
+    return max(1, len(text) // 4)
+
+
+def extract_model_pricing_from_session(workspace_hash):
+    """Extract REAL pricing data from Copilot session metadata."""
+    session_dir = os.path.join(WORKSPACE_STORAGE, workspace_hash, "chatSessions")
+    if not os.path.isdir(session_dir):
+        return "Unknown", "Unknown", {"input": 0, "output": 0}
+    
+    for path in glob.glob(os.path.join(session_dir, "*.jsonl")):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        if entry.get("kind") == 0:
+                            v = entry.get("v", {})
+                            input_state = v.get("inputState", {})
+                            model = input_state.get("selectedModel", {})
+                            model_name = model.get("name", "Unknown")
+                            model_id = model.get("metadata", {}).get("id", "Unknown")
+                            
+                            # Extract REAL pricing from Copilot metadata
+                            metadata = model.get("metadata", {})
+                            input_cost = metadata.get("inputCost", 0)
+                            output_cost = metadata.get("outputCost", 0)
+                            
+                            if model_name != "Unknown":
+                                pricing = {"input": input_cost, "output": output_cost}
+                                return model_name, model_id, pricing
+                    except:
+                        continue
+        except:
+            continue
+    
+    return "Unknown", "Unknown", {"input": 0, "output": 0}
+
+
+def calculate_cost(input_tokens, output_tokens, pricing_dict):
+    """Calculate cost in AICs based on REAL pricing from Copilot."""
+    if not pricing_dict or pricing_dict.get("input") == 0:
+        return 0.0
+    
+    input_cost = (input_tokens / 1_000_000) * pricing_dict.get("input", 0)
+    output_cost = (output_tokens / 1_000_000) * pricing_dict.get("output", 0)
+    return input_cost + output_cost
+
+
+def get_project_info(workspace_hash):
+    workspace_json = os.path.join(WORKSPACE_STORAGE, workspace_hash, "workspace.json")
+    if os.path.exists(workspace_json):
+        try:
+            with open(workspace_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            folder_uri = data.get("folder", "")
+            if folder_uri.startswith("file:///"):
+                path = unquote(folder_uri[8:]).replace("/", os.sep)
+                name = os.path.basename(path.rstrip(os.sep))
+                return name, path
+        except Exception:
+            pass
+    return workspace_hash, None
+
+
+def extract_tokens_and_classify(workspace_hash):
+    """Extract tokens and classify by Jira story or open prompt."""
+    session_dir = os.path.join(WORKSPACE_STORAGE, workspace_hash, "chatSessions")
+    if not os.path.isdir(session_dir):
+        return defaultdict(lambda: {"input": 0, "output": 0, "chats": 0}), {"input": 0, "output": 0, "chats": 0}
+    
+    story_tokens = defaultdict(lambda: {"input": 0, "output": 0, "chats": 0})
+    open_tokens = {"input": 0, "output": 0, "chats": 0}
+    
+    for path in glob.glob(os.path.join(session_dir, "*.json")) + glob.glob(os.path.join(session_dir, "*.jsonl")):
+        try:
+            requests = _load_session_requests(path)
+            for req in requests:
+                prompt_text = _text_value((req.get("message") or {}).get("text", ""))
+                response_parts = req.get("response") or []
+                response_text = ""
+                for part in response_parts:
+                    if isinstance(part, dict):
+                        response_text += _text_value(part.get("value", ""))
+                    elif isinstance(part, str):
+                        response_text += part
+                
+                if not prompt_text.strip():
+                    continue
+                
+                input_tokens = estimate_tokens(prompt_text)
+                output_tokens = estimate_tokens(response_text)
+                
+                # Get Jira keys from prompt
+                keys = get_jira_keys(prompt_text)
+                
+                if keys:
+                    for key in set(keys):
+                        story_tokens[key]["input"] += input_tokens
+                        story_tokens[key]["output"] += output_tokens
+                        story_tokens[key]["chats"] += 1
+                else:
+                    open_tokens["input"] += input_tokens
+                    open_tokens["output"] += output_tokens
+                    open_tokens["chats"] += 1
+        except Exception as e:
+            print(f"[WARN] Error extracting from {path}: {str(e)[:50]}")
+            continue
+    
+    return story_tokens, open_tokens
+
+
+def _text_value(value):
+    """Return readable text from Copilot JSON values."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(_text_value(item) for item in value)
+    if isinstance(value, dict):
+        for key in ("value", "text", "content"):
+            if key in value:
+                return _text_value(value[key])
+        return ""
+    return str(value)
+
+
+def _load_session_requests(path):
+    """Load Copilot chat requests from JSON or JSONL."""
+    if path.endswith(".json"):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data.get("requests", []) if isinstance(data, dict) else []
+        except Exception:
+            return []
+
+    requests = []
+    response_updates = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                kind = entry.get("kind")
+                k = entry.get("k", [])
+                v = entry.get("v")
+
+                if kind == 0 and isinstance(v, dict) and "requests" in v:
+                    requests = list(v["requests"])
+                elif k == ["requests"] and isinstance(v, list):
+                    requests.extend(v)
+                elif (len(k) == 3 and k[0] == "requests"
+                      and isinstance(k[1], int) and k[2] == "response"):
+                    response_updates[k[1]] = v if isinstance(v, list) else []
+    except Exception:
+        return []
+
+    for idx, resp in response_updates.items():
+        if idx < len(requests):
+            requests[idx]["response"] = resp
+    return requests
+
+
+def get_jira_keys(text):
+    """Extract Jira keys from text."""
+    matches = re.findall(r"\b[A-Za-z]{2,10}-\d+\b", text)
+    return [m.upper() for m in matches if m.upper() not in IGNORE_KEYS]
+
+
+def generate_report(project_name, story_tokens, open_tokens, model_name, model_id, pricing):
+    """Generate tokens and costs report."""
+    report = []
+    report.append(f"\n{'='*100}")
+    report.append(f"TOKENS & COSTS REPORT - {project_name.upper()}")
+    report.append(f"Generated: {datetime.now().strftime('%d-%b-%Y %H:%M:%S')}")
+    report.append(f"Model: {model_name} (ID: {model_id})")
+    report.append(f"Pricing: Input={pricing.get('input', 0)} AICs/1M | Output={pricing.get('output', 0)} AICs/1M")
+    report.append(f"{'='*100}\n")
+    
+    # Jira Stories Summary
+    if story_tokens:
+        report.append("JIRA STORIES - TOKENS & COSTS")
+        report.append(f"{'-'*100}")
+        report.append(f"{'Jira Story':<20} | {'Messages':<10} | {'Input (K)':<12} | {'Output (K)':<12} | {'Total (K)':<12} | {'Cost (AICs)':<15}")
+        report.append(f"{'-'*100}")
+        
+        total_jira_input = 0
+        total_jira_output = 0
+        total_jira_chats = 0
+        total_jira_cost = 0.0
+        
+        for story_id in sorted(story_tokens.keys()):
+            tok = story_tokens[story_id]
+            total_tok = tok["input"] + tok["output"]
+            cost = calculate_cost(tok["input"], tok["output"], pricing)
+            
+            total_jira_input += tok["input"]
+            total_jira_output += tok["output"]
+            total_jira_chats += tok["chats"]
+            total_jira_cost += cost
+            
+            report.append(f"{story_id:<20} | {tok['chats']:<10} | {tok['input']:<12}K | {tok['output']:<12}K | {total_tok:<12}K | {cost:.6f}")
+        
+        report.append(f"{'-'*100}")
+        report.append(f"{'TOTAL (JIRA)':<20} | {total_jira_chats:<10} | {total_jira_input:<12}K | {total_jira_output:<12}K | {total_jira_input + total_jira_output:<12}K | {total_jira_cost:.6f}")
+        report.append("")
+    
+    # Open Prompts Summary
+    if open_tokens["chats"] > 0:
+        report.append("\nOPEN PROMPTS - TOKENS & COSTS")
+        report.append(f"{'-'*100}")
+        report.append(f"{'Type':<20} | {'Messages':<10} | {'Input (K)':<12} | {'Output (K)':<12} | {'Total (K)':<12} | {'Cost (AICs)':<15}")
+        report.append(f"{'-'*100}")
+        
+        total_tok = open_tokens["input"] + open_tokens["output"]
+        cost = calculate_cost(open_tokens["input"], open_tokens["output"], pricing)
+        report.append(f"{'Open Prompts':<20} | {open_tokens['chats']:<10} | {open_tokens['input']:<12}K | {open_tokens['output']:<12}K | {total_tok:<12}K | {cost:.6f}")
+        report.append("")
+    
+    # Overall Summary
+    report.append("\nOVERALL SUMMARY")
+    report.append(f"{'-'*100}")
+    all_input = sum(t["input"] for t in story_tokens.values()) + open_tokens["input"]
+    all_output = sum(t["output"] for t in story_tokens.values()) + open_tokens["output"]
+    all_chats = sum(t["chats"] for t in story_tokens.values()) + open_tokens["chats"]
+    all_cost = sum(calculate_cost(t["input"], t["output"], pricing) for t in story_tokens.values()) + calculate_cost(open_tokens["input"], open_tokens["output"], pricing)
+    
+    report.append(f"Total Messages       | {all_chats}")
+    report.append(f"Total Input Tokens   | {all_input}K")
+    report.append(f"Total Output Tokens  | {all_output}K")
+    report.append(f"Total Tokens         | {all_input + all_output}K")
+    report.append(f"Total Cost           | {all_cost:.6f} AICs")
+    report.append(f"{'='*100}\n")
+    
+    return "\n".join(report)
+
+
+def process_workspace(workspace_hash):
+    project_name, project_path = get_project_info(workspace_hash)
+    print(f"\n[PROCESS] Project: {project_name}")
+    print(f"[INFO] Project folder: {project_path}")
+    
+    # Extract REAL model info and pricing
+    model_name, model_id, pricing = extract_model_pricing_from_session(workspace_hash)
+    print(f"[INFO] Model: {model_name} (ID: {model_id})")
+    print(f"[INFO] Pricing: Input={pricing.get('input', 0)} | Output={pricing.get('output', 0)} AICs/1M")
+    
+    # Extract tokens by Jira story and open prompts
+    story_tokens, open_tokens = extract_tokens_and_classify(workspace_hash)
+    
+    # Generate report
+    report = generate_report(project_name, story_tokens, open_tokens, model_name, model_id, pricing)
+    
+    # Save report
+    with open(TOKENS_REPORT_FILE, "a", encoding="utf-8") as f:
+        f.write(report)
+    
+    print(report)
+    
+    # Log summary
+    total_jira_cost = sum(calculate_cost(t["input"], t["output"], pricing) for t in story_tokens.values())
+    open_cost = calculate_cost(open_tokens["input"], open_tokens["output"], pricing)
+    print(f"[INFO] Jira Stories Cost: {total_jira_cost:.6f} AICs")
+    print(f"[INFO] Open Prompts Cost: {open_cost:.6f} AICs")
+
+
+def process_all_workspaces():
+    # Clear report file on startup
+    open(TOKENS_REPORT_FILE, "w", encoding="utf-8").close()
+    
+    for workspace_hash in os.listdir(WORKSPACE_STORAGE):
+        session_dir = os.path.join(WORKSPACE_STORAGE, workspace_hash, "chatSessions")
+        if not os.path.isdir(session_dir):
+            continue
+        try:
+            process_workspace(workspace_hash)
+        except Exception as e:
+            print(f"[ERROR] Processing failed for {workspace_hash}: {str(e)[:100]}")
+
+
+class CopilotChatEventHandler(FileSystemEventHandler):
+    def __init__(self):
+        self.last_triggered = {}
+    
+    def on_modified(self, event):
+        if not ((event.src_path.endswith(".json") or event.src_path.endswith(".jsonl"))
+                and "chat" in event.src_path.lower()):
+            return
+        
+        try:
+            rel_path = os.path.relpath(event.src_path, WORKSPACE_STORAGE)
+            workspace_hash = rel_path.split(os.sep)[0]
+        except Exception:
+            return
+        
+        now = time.time()
+        if now - self.last_triggered.get(workspace_hash, 0) < 2:
+            return
+        self.last_triggered[workspace_hash] = now
+        
+        project_name, project_path = get_project_info(workspace_hash)
+        print(f"\n[EVENT DETECTED] Chat updated in project: {project_name}")
+        
+        try:
+            process_workspace(workspace_hash)
+            print("[SUCCESS] Tokens & costs report updated.")
+        except Exception as e:
+            print(f"[ERROR] Processing failed: {str(e)[:100]}")
+
+
+if __name__ == "__main__":
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    
+    sys.stdout = open(LOG_FILE, "a", encoding="utf-8", buffering=1)
+    sys.stderr = sys.stdout
+    
+    if not os.path.exists(WORKSPACE_STORAGE):
+        print(f"[ERROR] Workspace storage path not found: {WORKSPACE_STORAGE}")
+        exit(1)
+    
+    event_handler = CopilotChatEventHandler()
+    observer = Observer()
+    observer.schedule(event_handler, WORKSPACE_STORAGE, recursive=True)
+    observer.start()
+    
+    print("[INFO] Copilot Chat Tokens & Costs Tracker")
+    print("[INFO] Monitoring tokens and costs in real-time...")
+    print("[INFO] Report: tokens_and_costs_report.txt")
+    print("[INFO] Press Ctrl+C to stop.\n")
+    
+    process_all_workspaces()
+    
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join() in event_wacth.py and double click on install watcher task bat 
+
+Copilot: Perfect! You're ready to deploy. Here's the final checklist:
+
+**✅ Code Updated**
+- New 
+ pasted with token/cost tracking (no chat storage)
+- Output: `tokens_and_costs_report.txt` with summary metrics only
+
+**✅ Next Step: Run Installer**
+Double-click `install_watcher_task.bat` → This will:
+1. Install watchdog library
+2. Create Startup shortcut
+3. Start watcher process automatically
+
+**✅ What Happens After**
+- Watcher monitors VS Code Copilot chats in real-time
+- Every time you chat with Copilot, it automatically:
+  - Counts input/output tokens
+  - Calculates costs in AICs
+  - Groups by Jira story OR marks as "Open Prompt"
+  - Updates `tokens_and_costs_report.txt` with fresh summary
+
+**✅ Output You'll See**
+```
+SIGMA PROJECTS - TOKENS & COSTS SUMMARY
+SIGMA-101: 120K input + 250K output = 370K total = 0.41 AICs
+SIGMA-205: 80K input + 180K output = 260K total = 0.29 AICs
+─────────────────────────────────────────────
+Open Prompts: 60K input + 100K output = 160K total = 0.16 AICs
+```
+
+**✅ Share with Team**
+Once running smoothly:
+1. Commit everything to GitHub
+2. Other devs clone repo
+3. They double-click `install_watcher_task.bat` on their machine
+4. Done! Each dev gets automatic token tracking
+
+Go ahead and run the installer! 🚀

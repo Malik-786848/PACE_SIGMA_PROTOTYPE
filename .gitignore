@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.user_config.json
+.export_state.json
+output.log
+chat_session.txt
+jira_story_chats.txt
+open_prompt_chats.txt
+Sigma---PACE---DEMO-/

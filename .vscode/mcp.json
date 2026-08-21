@@ -1,0 +1,11 @@
+{
+	"servers": {
+		"my-mcp-server-429ea54a": {
+    "type": "stdio",
+    "command": "c:\\python313\\python.exe",
+    "args": ["mcp.server.py"],
+    "cwd": "${workspaceFolder}/sigma-app-prototype"
+}
+	},
+	"inputs": []
+}

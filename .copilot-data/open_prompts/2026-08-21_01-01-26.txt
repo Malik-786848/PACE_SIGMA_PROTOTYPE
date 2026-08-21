@@ -1,0 +1,65 @@
+==================================================
+Timestamp: 2026-08-21 01:01:26
+Tokens: 290
+Cost: $0.003480
+==================================================
+
+User: where developers install watcher task
+
+Copilot: Developers install the watcher task from the central watcher project folder.
+
+For your current machine, the location is:
+
+```text
+C:\Users\312782\Documents\pace--sigma\sigma-app-prototype
+```
+
+Inside that folder, they double-click:
+
+```text
+install_watcher_task.bat
+```
+
+So the full file path is:
+
+```text
+C:\Users\312782\Documents\pace--sigma\sigma-app-prototype\install_watcher_task.bat
+```
+
+**For other developers**, give them this whole folder/project:
+
+```text
+sigma-app-prototype
+```
+
+Then they do:
+
+1. Open/copy the `sigma-app-prototype` folder on their machine.
+2. Double-click:
+
+```text
+install_watcher_task.bat
+```
+
+3. After installation, they can open any project in VS Code and chat with Copilot.
+4. Outputs will be created inside their local watcher folder:
+
+```text
+sigma-app-prototype\outputs\<project-name>\
+```
+
+Example:
+
+```text
+sigma-app-prototype\
+  outputs\
+    my-project\
+      jira_story_chats.txt
+      open_prompt_chats.txt
+      jira_stories\
+        PROJ-123.txt
+      open_prompts\
+        open_prompt_chats.txt
+```
+
+So the watcher is installed **once per developer machine**, not once per project.

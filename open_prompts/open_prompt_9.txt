@@ -1,0 +1,44 @@
+Timestamp   : 2026-08-21T10:30:38.978500
+Tokens In   : 83751
+Tokens Out  : 480
+Total Tokens: 84231
+Cost        : $0.000257
+
+PROMPT:
+three are running which one is ours
+
+RESPONSE:
+Let me check which Python process is ours (auto_watch.py):  Perfect! I can see which one is ours:
+
+---
+
+## ✅ **OURS = PID 18600 (python.exe)**
+
+### **Running Process Details:**
+
+| PID | Process | Status | Script | Purpose |
+|-----|---------|--------|--------|---------|
+| **18600** | **python.exe** | ✅ **OURS** | `auto_watch.py` | **Auto-captures VS Code chats** |
+| 28588 | python.exe | Other | `auto_capture_monitor.py` | Different project |
+| 11924 | pythonw.exe | Old | `direct_vs_code_capture.py` | Previous version (can stop) |
+
+---
+
+## 🎯 **What PID 18600 Does:**
+
+- ✅ Watches VS Code chat sessions
+- ✅ Captures JIRA and open prompt chats  
+- ✅ Saves to `.copilot-data/` folders
+- ✅ Runs every 10 seconds
+
+---
+
+## 🧹 **Optional: Stop the Old Process**
+
+If you want to clean up, you can stop **PID 11924** (the old `direct_vs_code_capture.py`):
+
+```powershell
+Stop-Process -Id 11924
+```
+
+But leave **PID 18600** running - that's your active monitor! ✅

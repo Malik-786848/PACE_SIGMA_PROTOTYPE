@@ -1,0 +1,137 @@
+Timestamp   : 2026-08-21T00:39:25.230568
+Tokens In   : 40541
+Tokens Out  : 1251
+Total Tokens: 41792
+Cost        : $0.000137
+
+PROMPT:
+i created task scheduler . if i create one project folder then it story jira chat txt and open prompt txt
+
+RESPONSE:
+Perfect! ✅ **Yes, exactly!**
+
+When you create a new project folder, here's what happens automatically:
+
+---
+
+## 🎯 **Step-by-Step Flow:**
+
+### **1. You Create a New Project:**
+```
+Documents/
+└── MyNewProject/
+    ├── src/
+    ├── README.md
+    └── ... (your project files)
+```
+
+### **2. Monitor Auto-Detects It** (runs every 5 seconds)
+The monitor sees your new folder and auto-initializes it.
+
+### **3. Auto-Creates Folder Structure:**
+```
+MyNewProject/
+├── .copilot-data/
+│   ├── jira_stories/        ← JIRA chats go here
+│   ├── open_prompts/        ← Open prompts go here
+│   └── tokens_summary.json  ← Token tracking
+├── src/
+├── README.md
+└── ...
+```
+
+### **4. You Copy Copilot Chat:**
+- Open VS Code
+- Ask Copilot something
+- Copy the chat (Ctrl+A, Ctrl+C)
+
+### **5. Monitor Detects & Saves:**
+
+**If it has JIRA key** (like "JIRA-123: How to..."):
+```
+MyNewProject/.copilot-data/jira_stories/JIRA-123.txt
+```
+Contains:
+```
+====== JIRA-123 ======
+Timestamp: 2026-08-21 10:45:33
+Tokens: 245
+Cost: $0.00294
+Project: MyNewProject
+
+User: JIRA-123 - How to implement...
+Copilot: Here's how...
+```
+
+**If it's just a question** (no JIRA key):
+```
+MyNewProject/.copilot-data/open_prompts/2026-08-21_10-45-33.txt
+```
+Contains:
+```
+====== 2026-08-21 10:45:33 ======
+Timestamp: 2026-08-21 10:45:33
+Tokens: 156
+Cost: $0.00187
+Project: MyNewProject
+
+User: How to optimize this...
+Copilot: Try using...
+```
+
+---
+
+## 📊 **Complete Example:**
+
+### **Create Project:**
+```
+Documents/MyBigProject/
+```
+
+### **Monitor Auto-Creates:**
+```
+Documents/MyBigProject/.copilot-data/
+├── jira_stories/
+│   ├── JIRA-100.txt        ← Chat about feature
+│   ├── JIRA-101.txt        ← Chat about bug
+│   ├── PROJ-50.txt         ← Another project ticket
+│   └── ...
+├── open_prompts/
+│   ├── 2026-08-21_10-30-45.txt   ← General question 1
+│   ├── 2026-08-21_11-15-22.txt   ← General question 2
+│   └── ...
+└── tokens_summary.json
+    {
+      "total_tokens_input": 8945,
+      "total_tokens_output": 12340,
+      "total_cost": "$0.18234",
+      "files": {...}
+    }
+```
+
+---
+
+## ✅ **Automatic Process:**
+
+| Step | Automatic? | How |
+|------|-----------|-----|
+| Create project | Manual | You create folder |
+| Detect project | ✅ Auto | Monitor scans every 5s |
+| Create .copilot-data | ✅ Auto | Monitor initializes |
+| Detect chat | ✅ Auto | Monitor watches clipboard |
+| Extract JIRA key | ✅ Auto | Regex pattern matching |
+| Save to correct folder | ✅ Auto | JIRA→jira_stories, Other→open_prompts |
+| Count tokens | ✅ Auto | tiktoken library |
+| Calculate cost | ✅ Auto | Token count × pricing |
+| Update summary | ✅ Auto | JSON updated |
+
+---
+
+## 🚀 **What You Do:**
+
+1. ✅ **Create task in Task Scheduler** (done!)
+2. ✅ **Create new project folder** (anytime you want)
+3. ✅ **Copy Copilot chats** (Ctrl+A, Ctrl+C)
+4. ✅ **Extract & view** (double-click EXTRACT_ALL_CHATS.bat)
+
+**That's it!** Everything else is automatic! 🎉

@@ -1,0 +1,110 @@
+┌────────────────────────────────────────────────────────────────────┐
+│                                                                    │
+│                    COPILOT CHAT SESSION EXPORT                     │
+│                                                                    │
+├────────────────────────────────────────────────────────────────────┤
+│ Workspace  : c:\Users\312782\Documents\pace--sigma                        │
+│ Exported   : 2026-08-18 16:20:12                                          │
+│ GitHub User: Unknown                                                      │
+│ Session ID : (Dynamic per session)                                 │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+
+######################################################################
+#                 SECTION 1: COPILOT SESSION METRICS                 #
+#         (Actions performed by GitHub Copilot during chat)          #
+######################################################################
+
+  📊 INTERACTION SUMMARY
+  ─────────────────────────────────────────────
+  Total User Prompts                       103
+  Total AI Responses                        98
+  Code Suggestions (blocks)                147
+  Test-related Responses                    18
+
+  ✨ FILES CREATED BY COPILOT (1)
+  ────────────────────────────────────────────────────────────
+    • SETUP_GUIDE.md                               -            -
+  ────────────────────────────────────────────────────────────
+    TOTAL                                       +0           -0
+
+  📝 FILES MODIFIED BY COPILOT (3)
+  ────────────────────────────────────────────────────────────
+    • event_watch.py                               -            -
+    • requirements.txt                             -            -
+    • run_event_watch.vbs                          -            -
+  ────────────────────────────────────────────────────────────
+    TOTAL                                       +0           -0
+
+  🗑️  FILES DELETED BY COPILOT (0)
+  ────────────────────────────────────────────────────────────
+    (none)
+
+  👁️  FILES READ BY COPILOT (16)
+  ─────────────────────────────────────────────
+    • main.py
+    • requirements.txt
+    • database.py
+    • github_model.py
+    • github_routes.py
+    • config.py
+    • jira_routes.py
+    • __init__.py
+    • setup_windows.bat
+    • README.md
+    • run_event_watch.vbs
+    • event_watch.py
+    • .user_config.json
+    • summary.txt
+    • chat_session.txt
+    • copilot_chat_session.py
+
+  💻 TERMINAL COMMANDS RUN (1)
+  ─────────────────────────────────────────────
+    • run_in_terminal
+
+  🔧 OTHER TOOL CALLS (8)
+  ─────────────────────────────────────────────
+    • copilot_getErrors
+    • copilot_memory
+    • manage_todo_list
+    • copilot_findTextInFiles
+    • copilot_applyPatch
+    • tool_search
+    • mcp_chat-session-_get_summary
+    • copilot_listDirectory
+
+  📈 SUMMARY TOTALS
+  ─────────────────────────────────────────────
+  Total Created Files                        1
+  Total Modified Files                       3
+  Total Deleted Files                        0
+  Total Added Lines                          0
+  Total Removed Lines                        0
+
+######################################################################
+######################################################################
+#                SECTION 2: LOCAL / GIT FILE CHANGES                 #
+#       (Manual edits + uncommitted changes detected via git)        #
+######################################################################
+📝 MODIFIED FILES:
+   File                                           Lines Added  Lines Removed
+   ─────────────────────────────────────────────────────────────────────────
+   • .gitignore                                           +10             -0
+   • .vscode/mcp.json                                     +11             -0
+   • .vscode/settings.json                                 +3             -0
+   • .vscode/tasks.json                                   +23             -0
+   • Sigma---PACE---DEMO-                                  +1             -0
+   • sigma-app-prototype                                   +1             -0
+   ─────────────────────────────────────────────────────────────────────────
+   TOTAL                                                  +49             -0
+
+✨ NEW FILES CREATED:
+   File                                           Lines Created
+   ─────────────────────────────────────────────────────────────
+   • summary.txt                                            110
+   ─────────────────────────────────────────────────────────────
+   TOTAL                                                    110
+
+######################################################################
